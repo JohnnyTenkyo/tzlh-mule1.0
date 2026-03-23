@@ -170,9 +170,9 @@ export const warmingProgress = pgTable("warming_progress", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
 }, (table) => [
-  index("idx_task_id").on(table.taskId),
-  index("idx_user_id").on(table.userId),
-  index("idx_status").on(table.status),
+  index("idx_wp_task_id").on(table.taskId),
+  index("idx_wp_user_id").on(table.userId),
+  index("idx_wp_status").on(table.status),
 ]);
 
 export type WarmingProgress = typeof warmingProgress.$inferSelect;
@@ -215,9 +215,9 @@ export const scheduledWarmingTasks = pgTable("scheduled_warming_tasks", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow(),
 }, (table) => [
-  index("idx_user_id").on(table.userId),
-  index("idx_enabled").on(table.isEnabled),
-  index("idx_next_executed").on(table.nextExecutedAt),
+  index("idx_swt_user_id").on(table.userId),
+  index("idx_swt_enabled").on(table.isEnabled),
+  index("idx_swt_next_executed").on(table.nextExecutedAt),
 ]);
 
 export type ScheduledWarmingTask = typeof scheduledWarmingTasks.$inferSelect;
@@ -237,8 +237,8 @@ export const aiConfigs = pgTable("ai_configs", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow(),
 }, (table) => [
-  uniqueIndex("idx_user_provider").on(table.userId, table.provider),
-  index("idx_user_active").on(table.userId, table.isActive),
+  uniqueIndex("idx_ai_user_provider").on(table.userId, table.provider),
+  index("idx_ai_user_active").on(table.userId, table.isActive),
 ]);
 export type AIConfig = typeof aiConfigs.$inferSelect;
 export type InsertAIConfig = typeof aiConfigs.$inferInsert;
@@ -259,8 +259,8 @@ export const customDataSources = pgTable("custom_data_sources", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow(),
 }, (table) => [
-  index("idx_user_id").on(table.userId),
-  index("idx_user_active").on(table.userId, table.isActive),
+  index("idx_cds_user_id").on(table.userId),
+  index("idx_cds_user_active").on(table.userId, table.isActive),
 ]);
 
 export type CustomDataSource = typeof customDataSources.$inferSelect;
