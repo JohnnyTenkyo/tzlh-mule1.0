@@ -11,6 +11,8 @@ import { createContext } from "./_core/context";
  */
 export function createApp() {
   const app = express();
+  // Trust reverse proxy (MuleRun / Vercel) so req.protocol reflects the original scheme
+  app.set("trust proxy", 1);
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
