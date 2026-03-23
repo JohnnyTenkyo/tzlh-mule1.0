@@ -113,13 +113,14 @@ export async function saveCandlesToCache(symbol: string, timeframe: string, cand
         close: String(c.close), volume: c.volume,
       }));
       try {
-        await db.insert(historicalCandleCache).values(values).onDuplicateKeyUpdate({
+        await db.insert(historicalCandleCache).values(values).onConflictDoUpdate({
+          target: [historicalCandleCache.symbol, historicalCandleCache.timeframe, historicalCandleCache.date],
           set: {
-            open: sql`VALUES(open)`,
-            high: sql`VALUES(high)`,
-            low: sql`VALUES(low)`,
-            close: sql`VALUES(close)`,
-            volume: sql`VALUES(volume)`,
+            open: sql`excluded.open`,
+            high: sql`excluded.high`,
+            low: sql`excluded.low`,
+            close: sql`excluded.close`,
+            volume: sql`excluded.volume`,
           }
         });
       } catch (err: any) {

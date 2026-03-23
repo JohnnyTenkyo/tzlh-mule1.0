@@ -1,7 +1,8 @@
 import {
-  int,
-  mysqlEnum,
-  mysqlTable,
+  serial,
+  integer,
+  pgTable,
+  pgEnum,
   text,
   timestamp,
   varchar,
@@ -11,22 +12,32 @@ import {
   index,
   uniqueIndex,
   boolean,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/pg-core";
+
+// ============================================================
+// Enums
+// ============================================================
+export const roleEnum = pgEnum("role", ["user", "admin"]);
+export const strategyEnum = pgEnum("strategy", ["standard", "aggressive", "ladder_cd_combo", "mean_reversion", "macd_volume", "bollinger_squeeze", "gemini_ai"]);
+export const backtestStatusEnum = pgEnum("backtest_status", ["pending", "running", "completed", "failed"]);
+export const sideEnum = pgEnum("side", ["buy", "sell"]);
+export const cacheStatusEnum = pgEnum("cache_status", ["empty", "partial", "complete"]);
+export const warmingStatusEnum = pgEnum("warming_status", ["pending", "success", "failed"]);
 
 // ============================================================
 // Users
 // ============================================================
-export const users = mysqlTable("users", {
-  id: int("id").autoincrement().primaryKey(),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   username: varchar("username", { length: 64 }).unique(),
   passwordHash: varchar("passwordHash", { length: 255 }),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: roleEnum("role").default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
@@ -36,13 +47,13 @@ export type InsertUser = typeof users.$inferInsert;
 // ============================================================
 // Backtest Sessions
 // ============================================================
-export const backtestSessions = mysqlTable("backtest_sessions", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const backtestSessions = pgTable("backtest_sessions", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
-  strategy: mysqlEnum("strategy", ["standard", "aggressive", "ladder_cd_combo", "mean_reversion", "macd_volume", "bollinger_squeeze", "gemini_ai"]).notNull(),
+  strategy: strategyEnum("strategy").notNull(),
   strategyParams: json("strategyParams").$type<Record<string, any>>(),
-  status: mysqlEnum("status", ["pending", "running", "completed", "failed"]).default("pending").notNull(),
+  status: backtestStatusEnum("status").default("pending").notNull(),
   symbols: json("symbols").$type<string[]>().notNull(),
   startDate: varchar("startDate", { length: 10 }).notNull(),
   endDate: varchar("endDate", { length: 10 }).notNull(),
@@ -53,13 +64,13 @@ export const backtestSessions = mysqlTable("backtest_sessions", {
   winRate: decimal("winRate", { precision: 5, scale: 4 }),
   maxDrawdown: decimal("maxDrawdown", { precision: 10, scale: 4 }),
   sharpeRatio: decimal("sharpeRatio", { precision: 10, scale: 4 }),
-  totalTrades: int("totalTrades"),
-  winningTrades: int("winningTrades"),
-  losingTrades: int("losingTrades"),
+  totalTrades: integer("totalTrades"),
+  winningTrades: integer("winningTrades"),
+  losingTrades: integer("losingTrades"),
   benchmarkReturn: decimal("benchmarkReturn", { precision: 10, scale: 4 }),
   totalCommissionFee: decimal("totalCommissionFee", { precision: 15, scale: 2 }).default("0"),
   totalPlatformFee: decimal("totalPlatformFee", { precision: 15, scale: 2 }).default("0"),
-  progress: int("progress").default(0),
+  progress: integer("progress").default(0),
   progressMessage: text("progressMessage"),
   resultSummary: json("resultSummary"),
   aiAnalysis: text("aiAnalysis"),
@@ -72,11 +83,11 @@ export type BacktestSession = typeof backtestSessions.$inferSelect;
 // ============================================================
 // Backtest Trades
 // ============================================================
-export const backtestTrades = mysqlTable("backtest_trades", {
-  id: int("id").autoincrement().primaryKey(),
-  sessionId: int("sessionId").notNull(),
+export const backtestTrades = pgTable("backtest_trades", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("sessionId").notNull(),
   symbol: varchar("symbol", { length: 20 }).notNull(),
-  side: mysqlEnum("side", ["buy", "sell"]).notNull(),
+  side: sideEnum("side").notNull(),
   quantity: decimal("quantity", { precision: 15, scale: 4 }).notNull(),
   price: decimal("price", { precision: 15, scale: 4 }).notNull(),
   totalAmount: decimal("totalAmount", { precision: 15, scale: 2 }).notNull(),
@@ -96,8 +107,8 @@ export const backtestTrades = mysqlTable("backtest_trades", {
 // ============================================================
 // Historical Candle Cache
 // ============================================================
-export const historicalCandleCache = mysqlTable("historical_candle_cache", {
-  id: int("id").autoincrement().primaryKey(),
+export const historicalCandleCache = pgTable("historical_candle_cache", {
+  id: serial("id").primaryKey(),
   symbol: varchar("symbol", { length: 20 }).notNull(),
   timeframe: varchar("timeframe", { length: 10 }).notNull(),
   date: varchar("date", { length: 30 }).notNull(),
@@ -114,15 +125,15 @@ export const historicalCandleCache = mysqlTable("historical_candle_cache", {
 // ============================================================
 // Cache Metadata
 // ============================================================
-export const cacheMetadata = mysqlTable("cache_metadata", {
-  id: int("id").autoincrement().primaryKey(),
+export const cacheMetadata = pgTable("cache_metadata", {
+  id: serial("id").primaryKey(),
   symbol: varchar("symbol", { length: 20 }).notNull(),
   timeframe: varchar("timeframe", { length: 10 }).notNull(),
   oldestDate: varchar("oldestDate", { length: 30 }),
   newestDate: varchar("newestDate", { length: 30 }),
-  candleCount: int("candleCount").default(0),
-  lastUpdated: timestamp("lastUpdated").defaultNow().onUpdateNow(),
-  status: mysqlEnum("status", ["empty", "partial", "complete"]).default("empty"),
+  candleCount: integer("candleCount").default(0),
+  lastUpdated: timestamp("lastUpdated").defaultNow(),
+  status: cacheStatusEnum("status").default("empty"),
 }, (table) => [
   uniqueIndex("idx_cm_symbol_tf").on(table.symbol, table.timeframe),
 ]);
@@ -130,16 +141,16 @@ export const cacheMetadata = mysqlTable("cache_metadata", {
 // ============================================================
 // Data Source Health
 // ============================================================
-export const dataSourceHealth = mysqlTable("data_source_health", {
-  id: int("id").autoincrement().primaryKey(),
+export const dataSourceHealth = pgTable("data_source_health", {
+  id: serial("id").primaryKey(),
   source: varchar("source", { length: 30 }).notNull(),
   timeframe: varchar("timeframe", { length: 10 }).notNull(),
-  successCount: int("successCount").default(0),
-  failCount: int("failCount").default(0),
+  successCount: integer("successCount").default(0),
+  failCount: integer("failCount").default(0),
   lastSuccess: timestamp("lastSuccess"),
   lastFail: timestamp("lastFail"),
   lastError: text("lastError"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
 }, (table) => [
   uniqueIndex("idx_dsh_source_tf").on(table.source, table.timeframe),
 ]);
@@ -147,15 +158,15 @@ export const dataSourceHealth = mysqlTable("data_source_health", {
 // ============================================================
 // Warming Progress (缓存预热进度跟踪)
 // ============================================================
-export const warmingProgress = mysqlTable("warming_progress", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const warmingProgress = pgTable("warming_progress", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   taskId: varchar("taskId", { length: 64 }).notNull().unique(),
   symbol: varchar("symbol", { length: 20 }).notNull(),
-  status: mysqlEnum("status", ["pending", "success", "failed"]).default("pending").notNull(),
+  status: warmingStatusEnum("status").default("pending").notNull(),
   dataSource: varchar("dataSource", { length: 30 }),
   errorMessage: text("errorMessage"),
-  duration: int("duration"), // milliseconds
+  duration: integer("duration"), // milliseconds
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
 }, (table) => [
@@ -170,15 +181,15 @@ export type InsertWarmingProgress = typeof warmingProgress.$inferInsert;
 // ============================================================
 // Warming Stats (缓存预热统计数据)
 // ============================================================
-export const warmingStats = mysqlTable("warming_stats", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const warmingStats = pgTable("warming_stats", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   dataSource: varchar("dataSource", { length: 30 }).notNull(),
-  successCount: int("successCount").default(0),
-  failCount: int("failCount").default(0),
+  successCount: integer("successCount").default(0),
+  failCount: integer("failCount").default(0),
   totalDuration: bigint("totalDuration", { mode: "number" }).default(0), // total milliseconds
   averageDuration: decimal("averageDuration", { precision: 10, scale: 2 }).default("0"), // milliseconds
-  lastUpdated: timestamp("lastUpdated").defaultNow().onUpdateNow(),
+  lastUpdated: timestamp("lastUpdated").defaultNow(),
 }, (table) => [
   uniqueIndex("idx_user_source").on(table.userId, table.dataSource),
 ]);
@@ -189,9 +200,9 @@ export type InsertWarmingStats = typeof warmingStats.$inferInsert;
 // ============================================================
 // Scheduled Warming Tasks (定时预热任务)
 // ============================================================
-export const scheduledWarmingTasks = mysqlTable("scheduled_warming_tasks", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const scheduledWarmingTasks = pgTable("scheduled_warming_tasks", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   sectors: json("sectors").$type<string[]>(), // selected sectors
@@ -202,7 +213,7 @@ export const scheduledWarmingTasks = mysqlTable("scheduled_warming_tasks", {
   lastExecutedAt: timestamp("lastExecutedAt"),
   nextExecutedAt: timestamp("nextExecutedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
 }, (table) => [
   index("idx_user_id").on(table.userId),
   index("idx_enabled").on(table.isEnabled),
@@ -215,16 +226,16 @@ export type InsertScheduledWarmingTask = typeof scheduledWarmingTasks.$inferInse
 // ============================================================
 // AI Configurations (用户级别 AI 配置)
 // ============================================================
-export const aiConfigs = mysqlTable("ai_configs", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const aiConfigs = pgTable("ai_configs", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   provider: varchar("provider", { length: 50 }).notNull(), // "gemini", "openai", "custom", etc.
   apiEndpoint: varchar("apiEndpoint", { length: 500 }).notNull(), // API base URL
   apiKey: varchar("apiKey", { length: 500 }).notNull(), // encrypted API key
   model: varchar("model", { length: 100 }).notNull(), // model name (e.g., "gpt-4", "gemini-pro")
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
 }, (table) => [
   uniqueIndex("idx_user_provider").on(table.userId, table.provider),
   index("idx_user_active").on(table.userId, table.isActive),
@@ -236,9 +247,9 @@ export type InsertAIConfig = typeof aiConfigs.$inferInsert;
 // ============================================================
 // Custom Data Sources (用户自定义数据源配置)
 // ============================================================
-export const customDataSources = mysqlTable("custom_data_sources", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const customDataSources = pgTable("custom_data_sources", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   name: varchar("name", { length: 100 }).notNull(), // e.g., "My Custom Source"
   provider: varchar("provider", { length: 50 }).notNull(), // e.g., "custom_api", "csv_upload", etc.
   apiEndpoint: varchar("apiEndpoint", { length: 500 }), // API base URL (if applicable)
@@ -246,7 +257,7 @@ export const customDataSources = mysqlTable("custom_data_sources", {
   description: text("description"), // user notes
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+  updatedAt: timestamp("updatedAt").defaultNow(),
 }, (table) => [
   index("idx_user_id").on(table.userId),
   index("idx_user_active").on(table.userId, table.isActive),

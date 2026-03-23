@@ -19,7 +19,6 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { LayoutDashboard, LogOut, PanelLeft, BarChart2, TrendingUp, Database, Activity, BookOpen, Cpu, Settings } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";

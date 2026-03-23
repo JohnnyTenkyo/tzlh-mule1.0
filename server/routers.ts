@@ -210,7 +210,7 @@ export const appRouter = router({
         symbols: input.symbols, startDate: input.startDate, endDate: input.endDate,
         initialCapital: String(input.initialCapital), maxPositionPct: String(input.maxPositionPct),
         strategyParams: input.strategyParams || null,
-      }).$returningId();
+      }).returning({ id: backtestSessions.id });
       const sessionId = result[0].id;
       const actualStrategy = input.strategy === "gemini_ai" ? "standard" : input.strategy as StrategyType;
       runBacktest({
@@ -341,7 +341,7 @@ export const appRouter = router({
           symbols: input.symbols, startDate: input.startDate, endDate: input.endDate,
           initialCapital: String(input.initialCapital), maxPositionPct: String(input.maxPositionPct),
           strategyParams: input.strategyParams || null,
-        }).$returningId();
+        }).returning({ id: backtestSessions.id });
         sessionIds.push(result[0].id);
       }
       // Run all backtests in parallel (background)
